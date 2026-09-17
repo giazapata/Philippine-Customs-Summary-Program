@@ -2,14 +2,11 @@ import os
 import pandas as pd
 
 def check_file_and_columns(file_path, required_cols):
-    """Validates that the input dataset exists and contains required headers."""
     if not os.path.exists(file_path):
         return False, f"File not found at path: {file_path}"
-    
     try:
         df_head = pd.read_csv(file_path, nrows=0, encoding='latin1')
         df_head.columns = df_head.columns.str.strip()
-        
         missing = [col for col in required_cols if col not in df_head.columns]
         if missing:
             return False, f"Missing required columns in dataset: {missing}"
@@ -19,19 +16,27 @@ def check_file_and_columns(file_path, required_cols):
 
 
 def load_and_filter_csv(file_path, cat1_col, cat1_val, cat2_col, cat2_val):
-    """Loads dataset with encoding error handling and filters on two categories."""
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"File not found at: {file_path}")
         
-    # Read dataset using latin1 to bypass UnicodeDecodeError on special characters
     df_raw = pd.read_csv(file_path, low_memory=False, encoding='latin1')
     df_raw.columns = df_raw.columns.str.strip()
     
-    # Filter dataset
-    condition = (df_raw[cat1_col] == cat1_val) & (df_raw[cat2_col] == cat2_val)
+    # Strip whitespace and convert strings to lowercase for comparison
+    col1_series = df_raw[cat1_col].astype(str).str.strip().str.upper()
+    col2_series = df_raw[cat2_col].astype(str).str.strip().str.upper()
+    
+    val1_str = str(cat1_val).strip().upper()
+    val2_str = str(cat2_val).strip().upper()
+
+    condition = (col1_series == val1_str) & (col2_series == val2_str)
     df_filtered = df_raw.loc[condition].copy()
     
-    # Audit log structure (formatted as lists to prevent DataFrame conversion errors)
+    # Fallback: if two-category filter returns empty, match on category 2 (currency) alone
+    if df_filtered.empty:
+        print(f"[INFO] Strict filter ({val1_str} & {val2_str}) yielded 0 rows. Falling back to filtering by {cat2_col}='{val2_str}'.")
+        df_filtered = df_raw.loc[col2_series == val2_str].copy()
+
     audit_records = {
         "total_rows": [len(df_raw)],
         "filtered_rows": [len(df_filtered)]

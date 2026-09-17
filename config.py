@@ -11,10 +11,9 @@ REQUIRED_COLUMNS = [
     "fob_n_cif",
     "goodsdescription"
 ]
-
-# Match exact column types in 2015.csv
+# Set to match exact CSV values (2015m1, not 2015m01)
 CAT_COL_1 = "entry"
-FILTER_CAT_1 = 201501  # Integer matching line 2 of 2015.csv
+FILTER_CAT_1 = "2015m1"
 
 CAT_COL_2 = "currency"
 FILTER_CAT_2 = "USD"
