@@ -1,0 +1,46 @@
+from datetime import date
+import os
+import urllib.request
+
+# 1. Single direct download URL
+url = "https://huggingface.co/datasets/bettergovph/open-customs-data/resolve/main/yearly/csv/2015.csv?download=true"
+
+output_file = "Philippine_Customs_2015.csv"
+
+print("Downloading single CSV file (>300 MB)...")
+# Download the single file without external dependencies
+urllib.request.urlretrieve(url, output_file)
+
+# 2. Extract metadata directly from the downloaded file
+file_size_bytes = os.path.getsize(output_file)
+file_size_mb = round(file_size_bytes / (1024 * 1024), 2)
+download_date = date.today().strftime("%Y-%m-%d")
+
+print(f"File downloaded successfully: {output_file}")
+print(f"File Size: {file_size_mb} MB ({file_size_bytes:,} bytes)")
+
+# 3. Format and record the metadata in README.md
+readme_entry = f"""
+## Dataset Metadata
+
+* **Filename:** {output_file}
+* **Source URL:** {url}
+* **Download Date:** {download_date}
+* **File Size:** {file_size_mb} MB ({file_size_bytes:,} bytes)
+"""
+
+with open("README.md", "a") as f:
+    f.write(readme_entry)
+
+print("Metadata appended to README.md")
+
+import pandas as pd
+
+# Process in chunks to prevent memory overload
+chunk_size = 50000
+
+for chunk in pd.read_csv("Philippine_Customs_2015.csv", chunksize=chunk_size, low_memory=False):
+    # Perform operations per chunk
+    print(f"Loaded chunk with {len(chunk):,} rows")
+
+git lfs pull
