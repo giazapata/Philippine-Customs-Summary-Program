@@ -1,10 +1,12 @@
+# config.py
+
 DATA_PATH = "data/2015.csv"
 OUTPUT_DIR = "outputs"
 NUM_COL = "dutiablevaluephp"
 
-# Updated to reflect real column names from 2015.csv
 REQUIRED_COLUMNS = [
     "entry",
+    "tm",
     "currency",
     "dutiablevaluephp",
     "m_fob",
@@ -12,7 +14,8 @@ REQUIRED_COLUMNS = [
     "goodsdescription"
 ]
 
-CAT_COL_1 = "entry"
+# Set CAT_COL_1 to 'tm' so '2015m1' matches the month column directly
+CAT_COL_1 = "tm"
 FILTER_CAT_1 = "2015m1"
 
 CAT_COL_2 = "currency"
