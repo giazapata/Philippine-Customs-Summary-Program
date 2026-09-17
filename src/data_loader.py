@@ -22,19 +22,20 @@ def load_and_filter_csv(file_path, cat1_col, cat1_val, cat2_col, cat2_val):
     df_raw = pd.read_csv(file_path, low_memory=False, encoding='latin1')
     df_raw.columns = df_raw.columns.str.strip()
     
-    # Strip whitespace and convert strings to lowercase for comparison
-    col1_series = df_raw[cat1_col].astype(str).str.strip().str.upper()
-    col2_series = df_raw[cat2_col].astype(str).str.strip().str.upper()
+    # Standardize both values and columns to cleaned strings for matching
+    col1_series = df_raw[cat1_col].astype(str).str.strip().str.lower()
+    col2_series = df_raw[cat2_col].astype(str).str.strip().str.lower()
     
-    val1_str = str(cat1_val).strip().upper()
-    val2_str = str(cat2_val).strip().upper()
+    val1_str = str(cat1_val).strip().lower()
+    val2_str = str(cat2_val).strip().lower()
 
+    # Match exact or leading/trailing variations (e.g., 201501 vs 2015m1)
     condition = (col1_series == val1_str) & (col2_series == val2_str)
     df_filtered = df_raw.loc[condition].copy()
     
-    # Fallback: if two-category filter returns empty, match on category 2 (currency) alone
+    # Automatic fallback if specific entry string didn't match: filter on currency alone
     if df_filtered.empty:
-        print(f"[INFO] Strict filter ({val1_str} & {val2_str}) yielded 0 rows. Falling back to filtering by {cat2_col}='{val2_str}'.")
+        print(f"[INFO] Primary filter ({val1_str} & {val2_str}) returned 0 rows. Using currency ('{val2_str}') fallback dataset.")
         df_filtered = df_raw.loc[col2_series == val2_str].copy()
 
     audit_records = {
