@@ -1,3 +1,18 @@
+# Team Project Custom Exclusions
+#   Large raw dataset (Exceeds GitHub's 100MB file limit)
+2015.csv
+
+#   Local test outputs folder (Keeps repository clean)
+outputs/
+
+#   Individual scratchpad & local test scripts for all members
+test_*.py
+test_patrick.py
+
+#   OS-specific system files
+.DS_Store
+Thumbs.db
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]

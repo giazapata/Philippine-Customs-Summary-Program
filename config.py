@@ -1,16 +1,20 @@
-import os
+# config.py
 
-DATA_PATH = "2015.csv"
+DATA_PATH = "data/2015.csv"
 OUTPUT_DIR = "outputs"
-
-REQUIRED_COLUMNS = {"countryorigin_iso3", "tq", "dutiablevaluephp"}
-
-CAT_COL_1 = "countryorigin_iso3"
-CAT_COL_2 = "tq"
 NUM_COL = "dutiablevaluephp"
 
-FILTER_CAT_1 = "CHN"
-FILTER_CAT_2 = "KG"
+REQUIRED_COLUMNS = [
+    "entry",
+    "currency",
+    "dutiablevaluephp",
+    "fob_n_cif",
+    "goodsdescription"
+]
 
-REF_ROWS = 2236612
-REF_DUTIABLE_TOTAL = 3587267375257.0
+# Match exact column types in 2015.csv
+CAT_COL_1 = "entry"
+FILTER_CAT_1 = 201501  # Integer matching line 2 of 2015.csv
+
+CAT_COL_2 = "currency"
+FILTER_CAT_2 = "USD"

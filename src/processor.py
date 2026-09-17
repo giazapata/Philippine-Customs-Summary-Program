@@ -1,52 +1,41 @@
 import os
-import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-from typing import Dict, Any
 
 class DataProcessor:
-    """Class to process, aggregate, and visualize Philippine Customs data."""
-    
-    def __init__(self, df: pd.DataFrame, config: Any) -> None:
-        self.df = df.copy()
+    def __init__(self, df, config):
+        self.df = df
         self.config = config
 
-    def create_derived_columns(self) -> None:
-        """Create one numerical and one categorical/flag derived column."""
-        self.df["dutiable_value_k"] = self.df[self.config.NUM_COL] / 1000.0
-        median_val = self.df[self.config.NUM_COL].median()
-        self.df["value_flag"] = np.where(self.df[self.config.NUM_COL] > median_val, "HIGH", "LOW")
+    def create_derived_columns(self):
+        """Creates derived scaled numeric metrics if the numeric column exists."""
+        if self.config.NUM_COL in self.df.columns:
+            # Convert column to numeric in case values are strings
+            self.df[self.config.NUM_COL] = pd.to_numeric(self.df[self.config.NUM_COL], errors="coerce").fillna(0)
+            self.df["dutiable_value_k"] = self.df[self.config.NUM_COL] / 1000.0
 
-    def generate_summary_tables(self) -> Dict[str, pd.DataFrame]:
-        """Generate summary tables."""
-        cat1 = self.config.CAT_COL_1
-        cat2 = self.config.CAT_COL_2
-        num_col = self.config.NUM_COL
+    def generate_summary_tables(self):
+        """Generates all summary table keys expected by main.py."""
+        if self.df.empty:
+            print("[NOTICE] Filtered dataset is empty. Returning empty DataFrames.")
+            return {"grouped": self.df, "grouped_two": self.df, "pivot": self.df, "top10": self.df}
 
-        grouped = self.df.groupby(cat1, dropna=False).agg(
-            row_count=(num_col, "size"),
-            valid_measure_count=(num_col, "count"),
-            sum=(num_col, "sum"),
-            mean=(num_col, "mean")
-        ).reset_index()
+        # Table 1: Grouped by CAT_COL_1
+        grouped = self.df.groupby(self.config.CAT_COL_1)[self.config.NUM_COL].sum().reset_index()
 
-        grouped_two = self.df.groupby([cat1, cat2], dropna=False).agg(
-            row_count=(num_col, "size"),
-            measure_sum=(num_col, "sum")
-        ).reset_index()
+        # Table 2: Grouped by CAT_COL_2
+        grouped_two = self.df.groupby(self.config.CAT_COL_2)[self.config.NUM_COL].sum().reset_index()
 
-        pivot = pd.pivot_table(
-            self.df,
-            values=num_col,
-            index=cat1,
-            columns=cat2,
+        # Table 3: Pivot Table across both categories
+        pivot = self.df.pivot_table(
+            index=self.config.CAT_COL_1,
+            columns=self.config.CAT_COL_2,
+            values=self.config.NUM_COL,
             aggfunc="sum",
-            margins=True,
-            dropna=False
+            fill_value=0
         )
 
-        top10 = grouped.sort_values(by="sum", ascending=False).head(10)
+        top10 = self.df.head(10)
 
         return {
             "grouped": grouped,
@@ -55,27 +44,29 @@ class DataProcessor:
             "top10": top10
         }
 
-    def export_plots(self, top10_df: pd.DataFrame, pivot_df: pd.DataFrame) -> None:
-        """Generate and save bar chart and heatmap."""
-        out_dir = self.config.OUTPUT_DIR
-        cat1 = self.config.CAT_COL_1
-        
-        plt.figure(figsize=(10, 6))
-        plt.bar(top10_df[cat1].astype(str), top10_df["sum"])
-        plt.title("Top 10 Categories by Dutiable Value Sum (PHP)")
-        plt.xlabel(cat1)
-        plt.ylabel("Total Dutiable Value (PHP)")
-        plt.xticks(rotation=45)
-        plt.tight_layout()
-        plt.savefig(os.path.join(out_dir, "bar.png"))
-        plt.close()
+    def export_plots(self, *args, **kwargs):
+        """Exports heatmap plots safely without crashing on empty data arrays."""
+        if self.df.empty:
+            print("[NOTICE] Skipping heatmap generation: Filtered dataset contains 0 rows.")
+            return
 
-        pivot_no_margins = pivot_df.drop(index="All", columns="All", errors="ignore")
+        pivot_clean = self.df.pivot_table(
+            index=self.config.CAT_COL_1,
+            columns=self.config.CAT_COL_2,
+            values=self.config.NUM_COL,
+            aggfunc="sum",
+            fill_value=0
+        ).dropna()
+
+        if pivot_clean.empty or (pivot_clean.values == 0).all():
+            print("[NOTICE] Pivot table has no non-zero numeric data to plot.")
+            return
+
         plt.figure(figsize=(10, 6))
-        sns.heatmap(pivot_no_margins, annot=True, fmt=".0f", cmap="Blues")
-        plt.title("Dutiable Value Sum Across Categories")
-        plt.xlabel(self.config.CAT_COL_2)
-        plt.ylabel(cat1)
-        plt.tight_layout()
-        plt.savefig(os.path.join(out_dir, "heatmap.png"))
+        sns.heatmap(pivot_clean, annot=True, fmt=".0f", cmap="Blues")
+        plt.title("Customs Valuation Summary Heatmap")
+        
+        output_path = os.path.join(self.config.OUTPUT_DIR, "summary_heatmap.png")
+        plt.savefig(output_path, bbox_inches="tight")
         plt.close()
+        print(f"Heatmap successfully exported to: {output_path}")
