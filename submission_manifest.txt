@@ -1,0 +1,3 @@
+Repository URL: https://github.com/giazapata/Philippine-Customs-Summary-Program
+Release Tag: week6-v1.0
+Commit Hash: <your-latest-full-commit-hash>
