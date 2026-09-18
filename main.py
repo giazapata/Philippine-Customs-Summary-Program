@@ -64,36 +64,17 @@ def main() -> None:
     # Step 6: Export Visualizations
     processor.export_plots(tables["top10"], tables["pivot"])
 
+    # Step 7: Export Validation CSV
+    # Note: Using df_filtered or derivation from processor outputs
+    df_filtered.to_csv(
+        os.path.join(config.OUTPUT_DIR, "validation.csv"),
+        index=False,
+        quoting=csv.QUOTE_MINIMAL,
+        encoding="utf-8"
+    )
+
     print("--- Pipeline execution complete! Check outputs/ folder. ---")
 
-# Ensure outputs directory exists
-os.makedirs('outputs', exist_ok=True)
-
-# 1. Compute unit prices and valuation metrics
-df['declared_unit_price'] = df['declared_value_php'] / df['quantity']
-df['valuation_gap_pct'] = ((df['declared_unit_price'] - df['benchmark_unit_price']) / df['benchmark_unit_price']) * 100
-
-# 2. Flag under-valued shipments (e.g., unit price > 30% below benchmark)
-df['is_undervalued'] = np.where(df['valuation_gap_pct'] < -30, 1, 0)
-
-# 3. Select validation columns
-validation_cols = [
-    'entry_id', 'importer_id', 'hs_code', 'declared_value_php',
-    'quantity', 'declared_unit_price', 'benchmark_unit_price',
-    'valuation_gap_pct', 'is_undervalued'
-]
-
-validation_df = df[validation_cols]
-
-# 4. Save to outputs folder with safe quoting options
-validation_df.to_csv(
-    'outputs/validation.csv',
-    index=False,
-    quoting=csv.QUOTE_MINIMAL,
-    encoding='utf-8'
-)
-
-print("Case 2 validation.csv successfully generated in outputs/ folder.")
 
 if __name__ == "__main__":
     main()
