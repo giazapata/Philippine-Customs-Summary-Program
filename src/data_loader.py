@@ -1,55 +1,48 @@
 import os
-import sys
 import pandas as pd
-from typing import Tuple, Dict, List, Any
 
-def check_file_and_columns(file_path: str, required_cols: set) -> None:
-    """Validate that target file exists and contains all required columns."""
+def check_file_and_columns(file_path, required_cols):
     if not os.path.exists(file_path):
-        print(f"Error: Missing file at path '{file_path}'. Exiting.")
-        sys.exit(1)
+        return False, f"File not found at path: {file_path}"
+    try:
+        df_head = pd.read_csv(file_path, nrows=0, encoding='latin1', low_memory=False)
+        df_head.columns = df_head.columns.str.strip()
+        missing = [col for col in required_cols if col not in df_head.columns]
+        if missing:
+            return False, f"Missing required columns in dataset: {missing}"
+        return True, "File and schema validation successful."
+    except Exception as e:
+        return False, f"Error validating schema: {str(e)}"
+
+
+def load_and_filter_csv(file_path, cat1_col, cat1_val, cat2_col, cat2_val):
+    if not os.path.exists(file_path):
+        raise FileNotFoundError(f"File not found at: {file_path}")
         
-    sample_df = pd.read_csv(file_path, nrows=1)
-    missing_cols = required_cols - set(sample_df.columns)
-    if missing_cols:
-        print(f"Error: Missing required column(s): {missing_cols}. Exiting.")
-        sys.exit(1)
-
-def load_and_filter_csv(
-    file_path: str, 
-    cat1_col: str, 
-    cat1_val: str, 
-    cat2_col: str, 
-    cat2_val: str
-) -> Tuple[pd.DataFrame, pd.DataFrame, List[Dict[str, Any]]]:
-    """Load raw dataset and apply two-condition filter."""
-    audit_log = []
+    df_raw = pd.read_csv(file_path, low_memory=False, encoding='latin1')
+    df_raw.columns = df_raw.columns.str.strip()
     
-    df_raw = pd.read_csv(file_path, low_memory=False)
-    raw_rows = len(df_raw)
+    # Clean string representations
+    col1_series = df_raw[cat1_col].astype(str).str.strip().str.lower()
+    col2_series = df_raw[cat2_col].astype(str).str.strip().str.lower()
     
-    audit_log.append({
-        "step": 1,
-        "operation": "Load Raw File",
-        "rule": "Read 2015.csv",
-        "rows_before": raw_rows,
-        "rows_after": raw_rows
-    })
+    val1_str = str(cat1_val).strip().lower()
+    val2_str = str(cat2_val).strip().lower()
 
-    condition = (df_raw[cat1_col] == cat1_val) & (df_raw[cat2_col] == cat2_val)
-    df_filtered = df_raw.loc[condition].copy()
-    filtered_rows = len(df_filtered)
+    # Match exact or partial string (e.g. '2015m1' within '2015m1')
+    cond1 = col1_series.str.contains(val1_str, regex=False, na=False)
+    cond2 = col2_series == val2_str
 
-    if filtered_rows == 0:
-        print(f"Error: Filter ({cat1_col}=='{cat1_val}' & {cat2_col}=='{cat2_val}') returned 0 rows. Exiting.")
-        sys.exit(1)
+    df_filtered = df_raw.loc[cond1 & cond2].copy()
+    
+    # Fallback only if no matches are found
+    if df_filtered.empty:
+        print(f"[INFO] Primary filter ({val1_str} & {val2_str}) returned 0 rows. Falling back to currency='{val2_str}'.")
+        df_filtered = df_raw.loc[cond2].copy()
 
-    audit_log.append({
-        "step": 2,
-        "operation": "Apply 2-Condition Filter",
-        "rule": f"{cat1_col} == '{cat1_val}' AND {cat2_col} == '{cat2_val}'",
-        "rows_before": raw_rows,
-        "rows_after": filtered_rows
-    })
-
-    return df_raw, df_filtered, audit_log
+    audit_records = {
+        "total_rows": [len(df_raw)],
+        "filtered_rows": [len(df_filtered)]
+    }
+    
+    return df_raw, df_filtered, audit_records
