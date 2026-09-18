@@ -64,10 +64,6 @@ def main() -> None:
 
     print("--- Pipeline execution complete! Check outputs/ folder. ---")
 
-
-if __name__ == "__main__":
-    main()
-
 import os
 import csv
 import pandas as pd
@@ -101,3 +97,6 @@ validation_df.to_csv(
 )
 
 print("Case 2 validation.csv successfully generated in outputs/ folder.")
+
+if __name__ == "__main__":
+    main()
