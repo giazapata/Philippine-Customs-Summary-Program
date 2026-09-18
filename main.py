@@ -1,5 +1,7 @@
 import os
 import pandas as pd
+import csv
+import numpy as np
 import config
 from src.data_loader import check_file_and_columns, load_and_filter_csv
 from src.processor import DataProcessor
@@ -63,11 +65,6 @@ def main() -> None:
     processor.export_plots(tables["top10"], tables["pivot"])
 
     print("--- Pipeline execution complete! Check outputs/ folder. ---")
-
-import os
-import csv
-import pandas as pd
-import numpy as np
 
 # Ensure outputs directory exists
 os.makedirs('outputs', exist_ok=True)
