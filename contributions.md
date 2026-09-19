@@ -32,6 +32,7 @@
   * `src/visualizer.py` -> `plot_bar_chart(df)`: Saves a bar chart with axis labels and units.
   * `src/visualizer.py` -> `plot_heatmap(df)`: Saves a heatmap excluding row and column totals.
 * **Deliverables:** `bar.png` and `heatmap.png`.
+* **Final Editing** edited main.py, config.py, requirements.txt, analysis.ipynb, and analysis.html
 
 ### **Gianela Zapata** — QA & Documentation
 * **Assigned Features:** Type hinting, docstrings, code cleanup.
